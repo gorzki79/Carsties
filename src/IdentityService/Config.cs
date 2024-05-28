@@ -55,6 +55,15 @@ public static class Config
                 RedirectUris = { "https://gdzies.com/oath2/callback" },
                 ClientSecrets = new [] { new Secret("NotASecret".Sha256()) },
                 AllowedGrantTypes = { GrantType.ResourceOwnerPassword }
+            },
+            new Client
+            {
+                ClientId = "nextApp",
+                ClientName = "nextApp",
+                ClientSecrets = { new Secret("secret".Sha256()) },
+                AllowedGrantTypes = GrantTypes.CodeAndClientCredentials,
+                RequirePkce = false,
+                
             }
         };
 }
