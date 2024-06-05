@@ -1,6 +1,7 @@
 {
   "dependencies": {
     "@types/react": "^18.3.3",
+    "next-auth": "^4.24.7",
     "query-string": "^9.0.0",
     "react-countdown": "^2.3.5",
     "zustand": "^4.5.2"
