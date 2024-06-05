@@ -3,6 +3,8 @@ const nextConfig = {
     images : {
         remotePatterns :[{
                 hostname: 'cdn.pixabay.com'
+            },  {
+                    hostname: 'encrypted-tbn0.gstatic.com'
             }
         ]
     }

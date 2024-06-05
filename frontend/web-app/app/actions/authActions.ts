@@ -21,13 +21,13 @@ export async function getCurrentUser() {
     }
 }
 
-export async function getTokenWorkaround(){
+export async function getTokenWorkaround() {
     const req = {
         headers: Object.fromEntries(headers() as Headers),
         cookies: Object.fromEntries(cookies().getAll().map(c => [c.name, c.value]))
     } as NextApiRequest;
 
-    var res = await getToken({req});
+    var res = await getToken({ req });
     console.log(res);
     return res;
 }

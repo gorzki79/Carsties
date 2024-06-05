@@ -6,11 +6,11 @@ type Props = {
     imageUrl: string;
 }
 
-export default function CarImage({imageUrl} : Props) {
+export default function CarImage({ imageUrl }: Props) {
     const [isLoading, setLoading] = useState(true);
     return (
-        <Image 
-            src={imageUrl} 
+        <Image
+            src={imageUrl}
             alt='image'
             fill
             priority
