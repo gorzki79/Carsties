@@ -14,9 +14,9 @@ builder.Services.AddDbContext<AuctionDbContext>(options =>
      options.UseNpgsql(builder.Configuration.GetConnectionString("DefaultConnection"));
 });
 builder.Services.AddAutoMapper(AppDomain.CurrentDomain.GetAssemblies());
-builder.Services.AddMassTransit(x => 
+builder.Services.AddMassTransit(x =>
 {
-     x.AddEntityFrameworkOutbox<AuctionDbContext>(o => 
+     x.AddEntityFrameworkOutbox<AuctionDbContext>(o =>
      {
           o.QueryDelay = TimeSpan.FromSeconds(10);
           o.UsePostgres();
@@ -26,7 +26,7 @@ builder.Services.AddMassTransit(x =>
      x.AddConsumersFromNamespaceContaining<AuctionCreatedFaultConsumer>();
      x.SetEndpointNameFormatter(new KebabCaseEndpointNameFormatter("auction", false));
 
-     x.UsingRabbitMq((context,config) => 
+     x.UsingRabbitMq((context, config) =>
      {
           config.Host(builder.Configuration["RabbitMq:Host"], "/", host =>
           {
@@ -47,6 +47,8 @@ builder.Services.AddAuthentication(JwtBearerDefaults.AuthenticationScheme)
      });
 
 builder.Services.AddGrpc();
+
+builder.Services.AddScoped<IAuctionRepository, AuctionRepository>();
 
 var app = builder.Build();
 
@@ -71,3 +73,5 @@ catch (Exception ex)
 }
 
 app.Run();
+
+public partial class Program { }

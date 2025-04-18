@@ -18,13 +18,13 @@ namespace AuctionService.Controllers;
 [Route("api/auctions")]
 public class AuctionsController : ControllerBase
 {
-    private readonly AuctionDbContext auctionDbContext;
+    private readonly IAuctionRepository auctionRepository;
     private readonly IMapper mapper;
     private readonly IPublishEndpoint publishEndpoint;
 
-    public AuctionsController(AuctionDbContext auctionDbContext, IMapper mapper, IPublishEndpoint publishEndpoint)
+    public AuctionsController(IAuctionRepository auctionRepository, IMapper mapper, IPublishEndpoint publishEndpoint)
     {
-        this.auctionDbContext = auctionDbContext;
+        this.auctionRepository = auctionRepository;
         this.mapper = mapper;
         this.publishEndpoint = publishEndpoint;
     }
@@ -32,27 +32,18 @@ public class AuctionsController : ControllerBase
     [HttpGet()]
     public async Task<ActionResult<List<AuctionDto>>> GetAllAuctions(string date)
     {
-        var query = auctionDbContext.Auctions.OrderBy(a => a.Item.Make).AsQueryable();
-
-        if (!string.IsNullOrEmpty(date))
-        {
-            query = query.Where(x => x.UpdatedAt.CompareTo(DateTime.Parse(date).ToUniversalTime()) > 0);
-        }
-
-        return await query.ProjectTo<AuctionDto>(this.mapper.ConfigurationProvider).ToListAsync();
+        return await auctionRepository.GetAuctionsAsync(date);
     }
 
     [HttpGet("{id}")]
     public async Task<ActionResult<AuctionDto>> GetAuctionById(Guid id)
     {
-        var auction = await auctionDbContext.Auctions
-            .Include(x => x.Item)
-            .FirstOrDefaultAsync(x => x.Id == id);
-        
+        var auction = await auctionRepository.GetAuctionByIdAsync(id);
+
         if (auction is null)
             return NotFound();
 
-        return this.mapper.Map<AuctionDto>(auction);
+        return auction;
     }
 
     [Authorize]
@@ -62,12 +53,12 @@ public class AuctionsController : ControllerBase
         var auction = this.mapper.Map<Auction>(auctionDto);
         auction.Seller = this.User.Identity.Name;
 
-        this.auctionDbContext.Auctions.Add(auction);
+        auctionRepository.AddAuction(auction);
 
         var newAuction = this.mapper.Map<AuctionDto>(auction);
         await this.publishEndpoint.Publish(this.mapper.Map<AuctionCreated>(newAuction));
 
-        var result = await this.auctionDbContext.SaveChangesAsync() > 0;
+        var result = await auctionRepository.SaveChangesAsync();
 
         if (!result)
         {
@@ -81,14 +72,13 @@ public class AuctionsController : ControllerBase
     [HttpPut("{id}")]
     public async Task<ActionResult> UpdateAuction(Guid id, UpdateAuctionDto auctionDto)
     {
-        var auction = await this.auctionDbContext.Auctions.Include(x => x.Item)
-            .FirstOrDefaultAsync(a => a.Id == id);
+        var auction = await auctionRepository.GetAuctionEntityByIdAsync(id);
 
         if (auction is null) return NotFound();
 
-        if (auction.Seller != this.User.Identity.Name) 
+        if (auction.Seller != this.User.Identity.Name)
             return Forbid();
-        
+
         auction.Item.Make = auctionDto.Make ?? auction.Item.Make;
         auction.Item.Model = auctionDto.Model ?? auction.Item.Model;
         auction.Item.Color = auctionDto.Color ?? auction.Item.Color;
@@ -97,7 +87,7 @@ public class AuctionsController : ControllerBase
 
         await this.publishEndpoint.Publish(this.mapper.Map<AuctionUpdated>(auction));
 
-        var result = await this.auctionDbContext.SaveChangesAsync() > 0;
+        var result = await auctionRepository.SaveChangesAsync();
 
         if (result) return Ok();
 
@@ -108,18 +98,18 @@ public class AuctionsController : ControllerBase
     [HttpDelete("{id}")]
     public async Task<ActionResult> DeleteAuction(Guid id)
     {
-        var auction = await this.auctionDbContext.Auctions.FindAsync(id);
+        var auction = await auctionRepository.GetAuctionEntityByIdAsync(id);
 
         if (auction is null) return NotFound();
 
-        if (auction.Seller != this.User.Identity.Name) 
+        if (auction.Seller != this.User.Identity.Name)
             return Forbid();
 
-        this.auctionDbContext.Auctions.Remove(auction);
+        auctionRepository.RemoveAuction(auction);
 
         await this.publishEndpoint.Publish(new AuctionDeleted { Id = auction.Id.ToString() });
 
-        var result = await this.auctionDbContext.SaveChangesAsync() > 0;
+        var result = await auctionRepository.SaveChangesAsync();
 
         if (result) return Ok();
 
